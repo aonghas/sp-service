@@ -191,6 +191,44 @@ export class SharePoint {
       return response.data;
     });
   }
+  recycleItem(list, id) {
+    return this.SP.post(
+      `/_api/web/lists/GetByTitle('${list}')/items(${id})/recycle()`,
+      {},
+      {
+        headers: {
+          "X-RequestDigest": this.DIGEST,
+          "X-HTTP-Method": "DELETE",
+          "IF-MATCH": "*",
+        },
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
+  listRecycleBin(params) {
+    return SP.get(`/_api/web/recyclebin()`, {
+      params: params || {},
+      headers: {
+        Accept: "application/json; odata=nometadata",
+      },
+    }).then((response) => {
+      return response.data;
+    });
+  }
+  restoreRecycledItem(id) {
+    return SP.post(
+      `/_api/web/recyclebin('${id}')/restore()`,
+      {},
+      {
+        headers: {
+          "X-RequestDigest": this.DIGEST,
+        },
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
   createColumn(listName, name, type) {
     return this.SP.post(
       `/_api/web/lists/getByTitle('${listName}')/fields`,
@@ -339,6 +377,97 @@ export class SharePoint {
       }
     ).then((response) => {
       return response.data.value;
+    });
+  }
+  getChangeHistory(list, id) {
+    return new Promise((resolve) => {
+      this.getList(list).then((data) => {
+        this.SP.get(`/_layouts/15/Versions.aspx?list=${data.Id}&ID=${id}`).then(
+          (resp) => {
+            const parser = new DOMParser();
+            const s = new XMLSerializer();
+            const xmlString = resp.data;
+            const doc = parser.parseFromString(xmlString, "text/html");
+            const table = doc.querySelector(".ms-settingsframe");
+
+            const items = table.querySelector("tbody").children;
+
+            const versionArray = [];
+
+            items.forEach((item) => {
+              const version = {};
+              if (item.children.length == 3 && item.querySelector("td")) {
+                const author = item.children[2];
+
+                versionArray.push({
+                  changes: [],
+                  author: {
+                    id: parseInt(
+                      author
+                        .querySelector(".ms-subtleLink")
+                        .getAttribute("href")
+                        .split("ID=")[1]
+                    ),
+                    name: author.textContent.replace(/[\n\t]+/g, ""),
+                    email: author
+                      .querySelector(".ms-imnSpan > a > span > img")
+                      .getAttribute("sip"),
+                  },
+                  date: new Date(
+                    item
+                      .querySelector(".ms-vb-title")
+                      .textContent.replace(/[\n\t]+/g, "")
+                  ).toISOString(),
+                  versionId: parseInt(
+                    item
+                      .querySelector(".ms-vb-title > table")
+                      .getAttribute("verid")
+                  ),
+                  version: parseFloat(item.querySelector(".ms-vb2").innerText),
+                });
+              } else if (
+                item.children.length == 2 &&
+                item.querySelector("td") &&
+                item.querySelector("tbody")
+              ) {
+                const rows = item.querySelector("tbody").children;
+                const versionId = rows[0].id.match(/(\d+)/g)[0];
+                const indexToAdd = versionArray.findIndex(
+                  (v) => v.versionId == versionId
+                );
+
+                const changes = [];
+
+                rows.forEach((change) => {
+                  const previousValue =
+                    (change.getAttribute("title") &&
+                      change.getAttribute("title").split("Previous Value: ")) ||
+                    [];
+                  changes.push({
+                    id: change.id,
+                    field:
+                      change.querySelector(".ms-propertysheet") &&
+                      change
+                        .querySelector(".ms-propertysheet")
+                        .innerText.replace(/[\n\t]+/g, "")
+                        .trim(),
+                    previousValue: previousValue[previousValue.length - 1],
+                    value:
+                      change.querySelector(".ms-vb") &&
+                      change
+                        .querySelector(".ms-vb")
+                        .innerText.replace(/[\n\t]+/g, ""),
+                  });
+                });
+
+                versionArray[indexToAdd].changes = changes;
+              }
+            });
+
+            resolve(versionArray);
+          }
+        );
+      });
     });
   }
   getItemVersions(list, id, params) {
