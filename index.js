@@ -338,6 +338,26 @@ export class SharePoint {
       return response.data;
     });
   }
+  getAllItems(list, params) {
+    return new Promise((resolve) => {
+      this.SP.get(`/_api/web/lists/GetByTitle('${list}')/items`, {
+        params: params || {},
+        headers: {
+          Accept: "application/json; odata=nometadata",
+        },
+      }).then(async (response) => {
+        let resp = response.data;
+        let results = resp.value;
+        while (resp["odata.nextLink"]) {
+          resp = await Axios.get(resp["odata.nextLink"]).then(
+            (resp) => resp.data
+          );
+          results = [...results, ...resp.value];
+        }
+        resolve({ value: results });
+      });
+    });
+  }
   getItemsByListId(list, params) {
     return this.SP.get(`/_api/web/lists(guid'${list}')/items`, {
       params: params || {},
