@@ -206,6 +206,23 @@ export class SharePoint {
       return response.data;
     });
   }
+  deleteRecycledItem(itemID) {
+    return this.SP.post(
+      `/_api/web/recyclebin('${itemID}')`,
+
+      {},
+
+      {
+        headers: {
+          "X-RequestDigest": this.DIGEST,
+
+          "X-HTTP-Method": "DELETE",
+        },
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
   listRecycleBin(params) {
     return SP.get(`/_api/web/recyclebin()`, {
       params: params || {},
@@ -638,6 +655,11 @@ export class SharePoint {
       },
     }).then((response) => {
       return response.data.Groups;
+    });
+  }
+  getSiteGroups() {
+    return this.SP.get(`/_api/web/sitegroups`).then((response) => {
+      return response.data;
     });
   }
   ensureUser(email) {
