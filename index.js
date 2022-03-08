@@ -6,7 +6,7 @@
 *****/
 
 import Axios from "axios";
-dotenv.config();
+require("dotenv").config();
 
 export class SharePoint {
   constructor(options) {

@@ -1,6 +1,6 @@
 {
   "name": "sp-service",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "description": "Module to help use SharePoint REST endpoints easily.",
   "main": "index.js",
   "scripts": {
