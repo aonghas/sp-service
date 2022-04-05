@@ -1,6 +1,6 @@
 {
   "name": "sp-service",
-  "version": "1.2.12",
+  "version": "1.2.19",
   "description": "Module to help use SharePoint REST endpoints easily.",
   "main": "index.js",
   "scripts": {
@@ -9,9 +9,7 @@
   "author": "Aonghas Anderson (aonghas@gmail.com)",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.21.1"
+    "axios": "^0.21.4"
   },
-  "devDependencies": {
-    "dotenv": "^16.0.0"
-  }
+  "devDependencies": {}
 }

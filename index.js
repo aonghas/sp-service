@@ -6,13 +6,15 @@
 *****/
 
 import Axios from "axios";
-require("dotenv").config();
 
 export class SharePoint {
   constructor(options) {
     this.baseUrl = (options && options.baseUrl) || process.env.VUE_APP_URL;
     this.DIGEST = "";
-    this.cancelToken = null;
+    this.cancelTokens = {
+      getItems: null,
+      searchUser: null
+    };
 
     this.SP = Axios.create({
       baseURL: this.baseUrl
@@ -347,7 +349,12 @@ export class SharePoint {
     });
   }
   getItems(list, params) {
+    if (this.cancelTokens.getItems) {
+      this.cancelTokens.getItems.cancel();
+    }
+    this.cancelTokens.getItems = Axios.CancelToken.source();
     return this.SP.get(`/_api/web/lists/GetByTitle('${list}')/items`, {
+      cancelToken: this.cancelTokens.getItems.token,
       params: params || {},
       headers: {
         Accept: "application/json; odata=nometadata"
@@ -734,10 +741,10 @@ export class SharePoint {
     });
   }
   searchUser(query, params) {
-    if (this.cancelToken) {
-      this.cancelToken.cancel();
+    if (this.cancelTokens.searchUser) {
+      this.cancelTokens.searchUser.cancel();
     }
-    this.cancelToken = Axios.CancelToken.source();
+    this.cancelTokens.searchUser = Axios.CancelToken.source();
     return this.SP.post(
       "/_api/SP.UI.ApplicationPages.ClientPeoplePickerWebServiceInterface.clientPeoplePickerSearchUser",
       {
@@ -761,7 +768,7 @@ export class SharePoint {
         }
       },
       {
-        cancelToken: this.cancelToken.token,
+        cancelToken: this.cancelTokens.searchUser.token,
         params: params || {},
         headers: {
           "X-RequestDigest": this.DIGEST
