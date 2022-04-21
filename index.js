@@ -349,12 +349,12 @@ export class SharePoint {
     });
   }
   getItems(list, params) {
-    if (this.cancelTokens.getItems) {
-      this.cancelTokens.getItems.cancel();
-    }
-    this.cancelTokens.getItems = Axios.CancelToken.source();
+    // if (this.cancelTokens.getItems) {
+    //   this.cancelTokens.getItems.cancel();
+    // }
+    // this.cancelTokens.getItems = Axios.CancelToken.source();
     return this.SP.get(`/_api/web/lists/GetByTitle('${list}')/items`, {
-      cancelToken: this.cancelTokens.getItems.token,
+      // cancelToken: this.cancelTokens.getItems.token,
       params: params || {},
       headers: {
         Accept: "application/json; odata=nometadata"
