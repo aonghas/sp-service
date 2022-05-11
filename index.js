@@ -532,6 +532,26 @@ export class SharePoint {
       return response.data;
     });
   }
+  likeItem(list, id, params) {
+    return this.SP.post(
+      `/_api/web/lists/GetByTitle('${list}')/items(${id})/like`,
+      {
+        params: params || {},
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
+  unlikeItem(list, id, params) {
+    return this.SP.post(
+      `/_api/web/lists/GetByTitle('${list}')/items(${id})/unlike`,
+      {
+        params: params || {},
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
   getPage(id) {
     return this.SP.get(`/_api/sitepages/pages(${id})`).then((response) => {
       return response.data;
