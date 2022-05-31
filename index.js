@@ -91,6 +91,30 @@ export class SharePoint {
       return response.data;
     });
   }
+  moveFile(payload) {
+    // payload = {
+    //     srcPath: {
+    //       DecodedUrl: fullURL [https://www.domain.sharepoint.com/<etc>]
+    //     },
+    //     destPath: {
+    //       DecodedUrl: fullURL [https://www.domain.sharepoint.com/<etc>]
+    //     }
+    //   }
+    return this.SP.post(
+      `/_api/SP.MoveCopyUtil.MoveFileByPath()`,
+      payload,
+      {
+        params: {
+          $expand: "ListItemAllFields"
+        },
+        headers: {
+          "X-RequestDigest": this.DIGEST
+        }
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
   deleteFile(folder, fileName) {
     return this.SP.post(
       `/_api/web/GetFolderByServerRelativeUrl('${folder}/${fileName}')`,
