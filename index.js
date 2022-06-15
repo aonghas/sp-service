@@ -393,6 +393,26 @@ export class SharePoint {
       return response.data;
     });
   }
+  getAllItemsByListId(list, params) {
+    return new Promise((resolve) => {
+      this.SP.get(`/_api/web/lists(guid'${list}')/items`, {
+        params: params || {},
+        headers: {
+          Accept: "application/json; odata=nometadata"
+        }
+      }).then(async (response) => {
+        let resp = response.data;
+        let results = resp.value;
+        while (resp["odata.nextLink"]) {
+          resp = await Axios.get(resp["odata.nextLink"]).then(
+            (resp) => resp.data
+          );
+          results = [...results, ...resp.value];
+        }
+        resolve({ value: results });
+      });
+    });
+  }
   searchItems(list, params) {
     return this.SP.get(`/_api/search/query`, {
       params: params || {},
@@ -536,7 +556,7 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/like`,
       {
-        params: params || {},
+        params: params || {}
       }
     ).then((response) => {
       return response.data;
@@ -546,7 +566,7 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/unlike`,
       {
-        params: params || {},
+        params: params || {}
       }
     ).then((response) => {
       return response.data;
