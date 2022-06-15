@@ -459,7 +459,7 @@ export class SharePoint {
 
             const versionArray = [];
 
-            items.forEach((item) => {
+            for (let item of items) {
               const version = {};
               if (item.children.length == 3 && item.querySelector("td")) {
                 const author = item.children[2];
@@ -503,7 +503,7 @@ export class SharePoint {
 
                 const changes = [];
 
-                rows.forEach((change) => {
+                for (let change of rows) {
                   const previousValue =
                     (change.getAttribute("title") &&
                       change.getAttribute("title").split("Previous Value: ")) ||
@@ -523,11 +523,11 @@ export class SharePoint {
                         .querySelector(".ms-vb")
                         .innerText.replace(/[\n\t]+/g, "")
                   });
-                });
+                }
 
                 versionArray[indexToAdd].changes = changes;
               }
-            });
+            }
 
             resolve(versionArray);
           }
