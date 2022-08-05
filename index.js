@@ -9,7 +9,7 @@ import Axios from "axios";
 
 export class SharePoint {
   constructor(options) {
-    this.baseUrl = (options && options.baseUrl) || import.meta.env.VITE_APP_URL;
+    this.baseUrl = (options && options.baseUrl) || process.env.VUE_APP_URL;
     this.DIGEST = "";
     this.cancelTokens = {
       getItems: null,
@@ -43,6 +43,22 @@ export class SharePoint {
       },
       {
         params: {},
+        headers: {
+          "X-RequestDigest": this.DIGEST
+        }
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
+  moveFile(payload) {
+    return this.SP.post(
+      `/_api/SP.MoveCopyUtil.MoveFileByPath()`,
+      payload,
+      {
+        params: {
+          $expand: "ListItemAllFields"
+        },
         headers: {
           "X-RequestDigest": this.DIGEST
         }
@@ -92,14 +108,6 @@ export class SharePoint {
     });
   }
   moveFile(payload) {
-    // payload = {
-    //     srcPath: {
-    //       DecodedUrl: fullURL [https://www.domain.sharepoint.com/<etc>]
-    //     },
-    //     destPath: {
-    //       DecodedUrl: fullURL [https://www.domain.sharepoint.com/<etc>]
-    //     }
-    //   }
     return this.SP.post(
       `/_api/SP.MoveCopyUtil.MoveFileByPath()`,
       payload,
@@ -227,6 +235,38 @@ export class SharePoint {
           "X-RequestDigest": this.DIGEST,
           "X-HTTP-Method": "DELETE",
           "IF-MATCH": "*"
+        }
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
+  recycleFile(folder, fileName) {
+    return this.SP.post(
+      `/_api/web/GetFolderByServerRelativeUrl('${folder}/${fileName}')/recycle()`,
+      {},
+      {
+        params: {},
+        headers: {
+          "X-HTTP-Method": "DELETE",
+          "If-Match": "*",
+          "X-RequestDigest": this.DIGEST
+        }
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
+  recycleFolder(folder) {
+    return this.SP.post(
+      `/_api/web/GetFolderByServerRelativeUrl('${folder}')/recycle()`,
+      {},
+      {
+        params: {},
+        headers: {
+          "X-HTTP-Method": "DELETE",
+          "If-Match": "*",
+          "X-RequestDigest": this.DIGEST
         }
       }
     ).then((response) => {
