@@ -9,7 +9,7 @@ import Axios from "axios";
 
 export class SharePoint {
   constructor(options) {
-    this.baseUrl = (options && options.baseUrl) || import.meta.env.VITE.env.VUE_APP_URL;
+    this.baseUrl = (options && options.baseUrl) || import.meta.env.VITE_APP_URL;
     this.DIGEST = "";
     this.cancelTokens = {
       getItems: null,
