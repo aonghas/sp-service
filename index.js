@@ -417,6 +417,26 @@ export class SharePoint {
       return response.data;
     });
   }
+  getAllItemsByListId(list, params) {
+    return new Promise((resolve) => {
+      this.SP.get(`/_api/web/lists(guid'${list}')/items`, {
+        params: params || {},
+        headers: {
+          Accept: "application/json; odata=nometadata"
+        }
+      }).then(async (response) => {
+        let resp = response.data;
+        let results = resp.value;
+        while (resp["odata.nextLink"]) {
+          resp = await Axios.get(resp["odata.nextLink"]).then(
+            (resp) => resp.data
+          );
+          results = [...results, ...resp.value];
+        }
+        resolve({ value: results });
+      });
+    });
+  }
   searchItems(list, params) {
     return this.SP.get(`/_api/search/query`, {
       params: params || {},
@@ -463,7 +483,7 @@ export class SharePoint {
 
             const versionArray = [];
 
-            items.forEach((item) => {
+            for (let item of items) {
               const version = {};
               if (item.children.length == 3 && item.querySelector("td")) {
                 const author = item.children[2];
@@ -507,7 +527,7 @@ export class SharePoint {
 
                 const changes = [];
 
-                rows.forEach((change) => {
+                for (let change of rows) {
                   const previousValue =
                     (change.getAttribute("title") &&
                       change.getAttribute("title").split("Previous Value: ")) ||
@@ -527,11 +547,11 @@ export class SharePoint {
                         .querySelector(".ms-vb")
                         .innerText.replace(/[\n\t]+/g, "")
                   });
-                });
+                }
 
                 versionArray[indexToAdd].changes = changes;
               }
-            });
+            }
 
             resolve(versionArray);
           }
@@ -560,7 +580,7 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/like`,
       {
-        params: params || {},
+        params: params || {}
       }
     ).then((response) => {
       return response.data;
@@ -570,7 +590,7 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/unlike`,
       {
-        params: params || {},
+        params: params || {}
       }
     ).then((response) => {
       return response.data;
