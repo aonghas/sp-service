@@ -1,17 +1,15 @@
 {
-  "name": "sp-service-vite",
-  "version": "1.0.0",
+  "name": "sp-service",
+  "version": "1.2.24",
   "description": "Module to help use SharePoint REST endpoints easily.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Samuel Dowse (samueldowse@gmail.com)",
+  "author": "Aonghas Anderson (aonghas@gmail.com)",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.27.2"
   },
-  "publishConfig": {
-    "@samueldowse:registry": "https://npm.pkg.github.com"
-  }
+  "devDependencies": {}
 }
