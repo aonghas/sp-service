@@ -1,6 +1,7 @@
 /*****
   SP REST services helper
     Author: Aonghas Anderson
+    Contributors: Samuel Dowse
     Original Date: July 2019
     Updated: Class version Dec 2021
 *****/
@@ -13,19 +14,19 @@ export class SharePoint {
     this.DIGEST = "";
     this.cancelTokens = {
       getItems: null,
-      searchUser: null
+      searchUser: null,
     };
 
     this.SP = Axios.create({
-      baseURL: this.baseUrl
+      baseURL: this.baseUrl,
     });
 
     console.log("connected to: " + this.baseUrl);
 
     this.SP.post("/_api/contextinfo", null, {
       headers: {
-        Accept: "application/json;odata=verbose"
-      }
+        Accept: "application/json;odata=verbose",
+      },
     })
       .then((result) => {
         console.log("Initialised DIGEST");
@@ -39,15 +40,27 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/folders`,
       {
-        ServerRelativeUrl: folderLocation + "/" + folderName
+        ServerRelativeUrl: folderLocation + "/" + folderName,
       },
       {
         params: {},
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
+      return response.data;
+    });
+  }
+  moveFile(payload) {
+    return this.SP.post(`/_api/SP.MoveCopyUtil.MoveFileByPath()`, payload, {
+      params: {
+        $expand: "ListItemAllFields",
+      },
+      headers: {
+        "X-RequestDigest": this.DIGEST,
+      },
+    }).then((response) => {
       return response.data;
     });
   }
@@ -68,8 +81,8 @@ export class SharePoint {
       fileContents,
       {
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -81,13 +94,25 @@ export class SharePoint {
       fileContents,
       {
         params: {
-          $expand: "ListItemAllFields"
+          $expand: "ListItemAllFields",
         },
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
+      return response.data;
+    });
+  }
+  moveFile(payload) {
+    return this.SP.post(`/_api/SP.MoveCopyUtil.MoveFileByPath()`, payload, {
+      params: {
+        $expand: "ListItemAllFields",
+      },
+      headers: {
+        "X-RequestDigest": this.DIGEST,
+      },
+    }).then((response) => {
       return response.data;
     });
   }
@@ -100,8 +125,8 @@ export class SharePoint {
         headers: {
           "X-HTTP-Method": "DELETE",
           "If-Match": "*",
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -113,8 +138,8 @@ export class SharePoint {
       payload,
       {
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -128,8 +153,8 @@ export class SharePoint {
         headers: {
           "X-RequestDigest": this.DIGEST,
           "IF-MATCH": "*",
-          "X-HTTP-Method": "MERGE"
-        }
+          "X-HTTP-Method": "MERGE",
+        },
       }
     ).then((response) => {
       return response.data;
@@ -139,7 +164,7 @@ export class SharePoint {
     return this.SP.get(
       `/_api/web/webinfos`,
       {
-        $select: "ServerRelativeUrl,Title"
+        $select: "ServerRelativeUrl,Title",
       },
       {}
     ).then((response) => {
@@ -155,8 +180,8 @@ export class SharePoint {
         headers: {
           "X-RequestDigest": this.DIGEST,
           "Content-Type": undefined,
-          "X-Requested-With": "XMLHttpRequest"
-        }
+          "X-Requested-With": "XMLHttpRequest",
+        },
       }
     ).then((response) => {
       return response.data;
@@ -172,8 +197,8 @@ export class SharePoint {
           "X-RequestDigest": this.DIGEST,
           "Content-Type": undefined,
           "X-HTTP-Method": "DELETE",
-          "X-Requested-With": "XMLHttpRequest"
-        }
+          "X-Requested-With": "XMLHttpRequest",
+        },
       }
     ).then((response) => {
       return response.data;
@@ -187,8 +212,8 @@ export class SharePoint {
         headers: {
           "X-RequestDigest": this.DIGEST,
           "X-HTTP-Method": "DELETE",
-          "IF-MATCH": "*"
-        }
+          "IF-MATCH": "*",
+        },
       }
     ).then((response) => {
       return response.data;
@@ -202,8 +227,40 @@ export class SharePoint {
         headers: {
           "X-RequestDigest": this.DIGEST,
           "X-HTTP-Method": "DELETE",
-          "IF-MATCH": "*"
-        }
+          "IF-MATCH": "*",
+        },
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
+  recycleFile(folder, fileName) {
+    return this.SP.post(
+      `/_api/web/GetFolderByServerRelativeUrl('${folder}/${fileName}')/recycle()`,
+      {},
+      {
+        params: {},
+        headers: {
+          "X-HTTP-Method": "DELETE",
+          "If-Match": "*",
+          "X-RequestDigest": this.DIGEST,
+        },
+      }
+    ).then((response) => {
+      return response.data;
+    });
+  }
+  recycleFolder(folder) {
+    return this.SP.post(
+      `/_api/web/GetFolderByServerRelativeUrl('${folder}')/recycle()`,
+      {},
+      {
+        params: {},
+        headers: {
+          "X-HTTP-Method": "DELETE",
+          "If-Match": "*",
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -219,8 +276,8 @@ export class SharePoint {
         headers: {
           "X-RequestDigest": this.DIGEST,
 
-          "X-HTTP-Method": "DELETE"
-        }
+          "X-HTTP-Method": "DELETE",
+        },
       }
     ).then((response) => {
       return response.data;
@@ -230,8 +287,8 @@ export class SharePoint {
     return SP.get(`/_api/web/recyclebin()`, {
       params: params || {},
       headers: {
-        Accept: "application/json; odata=nometadata"
-      }
+        Accept: "application/json; odata=nometadata",
+      },
     }).then((response) => {
       return response.data;
     });
@@ -242,8 +299,8 @@ export class SharePoint {
       {},
       {
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -254,12 +311,12 @@ export class SharePoint {
       `/_api/web/lists/getByTitle('${listName}')/fields`,
       {
         FieldTypeKind: type || 2,
-        Title: name
+        Title: name,
       },
       {
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -272,8 +329,8 @@ export class SharePoint {
         params: params || {},
         headers: {
           // Accept: "application/octet-stream",
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -284,8 +341,8 @@ export class SharePoint {
       params: params || {},
       headers: {
         // Accept: "application/octet-stream",
-        "X-RequestDigest": this.DIGEST
-      }
+        "X-RequestDigest": this.DIGEST,
+      },
     }).then((response) => {
       return response.data;
     });
@@ -297,8 +354,8 @@ export class SharePoint {
         params: params || {},
         headers: {
           // Accept: "application/octet-stream",
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -309,15 +366,15 @@ export class SharePoint {
       params: params || {},
       headers: {
         // Accept: "application/octet-stream",
-        "X-RequestDigest": this.DIGEST
-      }
+        "X-RequestDigest": this.DIGEST,
+      },
     }).then((response) => {
       return response.data;
     });
   }
   getFiles(folder, params) {
     return this.SP.get(`/_api/web/GetFolderByServerRelativeUrl('${folder}')`, {
-      params: params || {}
+      params: params || {},
     }).then((response) => {
       return response.data;
     });
@@ -326,7 +383,7 @@ export class SharePoint {
     return this.SP.get(
       `/_api/web/GetFolderByServerRelativeUrl('${folder}')/Files`,
       {
-        params: params || {}
+        params: params || {},
       }
     ).then((response) => {
       return response.data;
@@ -342,8 +399,8 @@ export class SharePoint {
   getFields(list, params) {
     return this.SP.get(`/_api/web/lists/getbytitle('${list}')/fields`, {
       params: Object.assign({}, params, {
-        $filter: "Hidden eq false and ReadOnlyField eq false"
-      })
+        $filter: "Hidden eq false and ReadOnlyField eq false",
+      }),
     }).then((response) => {
       return response.data;
     });
@@ -357,8 +414,8 @@ export class SharePoint {
       // cancelToken: this.cancelTokens.getItems.token,
       params: params || {},
       headers: {
-        Accept: "application/json; odata=nometadata"
-      }
+        Accept: "application/json; odata=nometadata",
+      },
     }).then((response) => {
       return response.data;
     });
@@ -368,8 +425,8 @@ export class SharePoint {
       this.SP.get(`/_api/web/lists/GetByTitle('${list}')/items`, {
         params: params || {},
         headers: {
-          Accept: "application/json; odata=nometadata"
-        }
+          Accept: "application/json; odata=nometadata",
+        },
       }).then(async (response) => {
         let resp = response.data;
         let results = resp.value;
@@ -387,8 +444,8 @@ export class SharePoint {
     return this.SP.get(`/_api/web/lists(guid'${list}')/items`, {
       params: params || {},
       headers: {
-        Accept: "application/json; odata=nometadata"
-      }
+        Accept: "application/json; odata=nometadata",
+      },
     }).then((response) => {
       return response.data;
     });
@@ -398,8 +455,8 @@ export class SharePoint {
       this.SP.get(`/_api/web/lists(guid'${list}')/items`, {
         params: params || {},
         headers: {
-          Accept: "application/json; odata=nometadata"
-        }
+          Accept: "application/json; odata=nometadata",
+        },
       }).then(async (response) => {
         let resp = response.data;
         let results = resp.value;
@@ -417,8 +474,8 @@ export class SharePoint {
     return this.SP.get(`/_api/search/query`, {
       params: params || {},
       headers: {
-        Accept: "application/json; odata=verbose"
-      }
+        Accept: "application/json; odata=verbose",
+      },
     }).then((response) => {
       return response;
     });
@@ -429,16 +486,16 @@ export class SharePoint {
       (data && {
         query: {
           __metadata: { type: "SP.CamlQuery" },
-          ViewXml: data
-        }
+          ViewXml: data,
+        },
       }) ||
         {},
       {
         params: params || {},
         headers: {
           "content-type": "application/json;odata=verbose",
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data.value;
@@ -476,7 +533,7 @@ export class SharePoint {
                     name: author.textContent.replace(/[\n\t]+/g, ""),
                     email: author
                       .querySelector(".ms-imnSpan > a > span > img")
-                      .getAttribute("sip")
+                      .getAttribute("sip"),
                   },
                   date: new Date(
                     item
@@ -488,7 +545,7 @@ export class SharePoint {
                       .querySelector(".ms-vb-title > table")
                       .getAttribute("verid")
                   ),
-                  version: parseFloat(item.querySelector(".ms-vb2").innerText)
+                  version: parseFloat(item.querySelector(".ms-vb2").innerText),
                 });
               } else if (
                 item.children.length == 2 &&
@@ -521,7 +578,7 @@ export class SharePoint {
                       change.querySelector(".ms-vb") &&
                       change
                         .querySelector(".ms-vb")
-                        .innerText.replace(/[\n\t]+/g, "")
+                        .innerText.replace(/[\n\t]+/g, ""),
                   });
                 }
 
@@ -539,7 +596,7 @@ export class SharePoint {
     return this.SP.get(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/versions`,
       {
-        params: params || {}
+        params: params || {},
       }
     ).then((response) => {
       return response.data;
@@ -547,7 +604,7 @@ export class SharePoint {
   }
   getItem(list, id, params) {
     return this.SP.get(`/_api/web/lists/GetByTitle('${list}')/items(${id})`, {
-      params: params || {}
+      params: params || {},
     }).then((response) => {
       return response.data;
     });
@@ -556,7 +613,7 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/like`,
       {
-        params: params || {}
+        params: params || {},
       }
     ).then((response) => {
       return response.data;
@@ -566,7 +623,7 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/unlike`,
       {
-        params: params || {}
+        params: params || {},
       }
     ).then((response) => {
       return response.data;
@@ -591,7 +648,7 @@ export class SharePoint {
   }
   getListFields(listTitle, params) {
     return this.SP.get(`/_api/web/lists/GetByTitle('${listTitle}')/fields`, {
-      params: params || {}
+      params: params || {},
     }).then((response) => {
       return response.data;
     });
@@ -604,12 +661,12 @@ export class SharePoint {
         Description: data.description,
         ContentTypesEnabled: true,
         AllowContentTypes: true,
-        BaseTemplate: 100
+        BaseTemplate: 100,
       },
       {
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -623,14 +680,14 @@ export class SharePoint {
         Description: data.description,
         ContentTypesEnabled: true,
         AllowContentTypes: true,
-        BaseTemplate: 100
+        BaseTemplate: 100,
       },
       {
         headers: {
           "IF-MATCH": "*",
           "X-HTTP-Method": "MERGE",
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -644,8 +701,8 @@ export class SharePoint {
         headers: {
           "IF-MATCH": "*",
           "X-HTTP-Method": "DELETE",
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -656,8 +713,8 @@ export class SharePoint {
       "/_api/sp.userprofiles.peoplemanager/getpropertiesfor(@v)",
       {
         params: {
-          "@v": `'${account}'`
-        }
+          "@v": `'${account}'`,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -665,11 +722,11 @@ export class SharePoint {
   }
   getUserByEmail(email) {
     return this.SP.get(
-      "/_api/sp.userprofiles.peoplemanager/getpropertiesfor(@v)",
+      "/_api/sp.userprofiles.peoplemanager/getpropertiesfor(accountName=@v)",
       {
         params: {
-          "@v": `%27i:0%23.f%7Cmembership%7C${email}%27`
-        }
+          "@v": `'i:0#.f|membership|${email}'`,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -690,8 +747,8 @@ export class SharePoint {
   getCurrentUser() {
     return this.SP.get("_api/web/currentuser", {
       params: {
-        $expand: "groups"
-      }
+        $expand: "groups",
+      },
     }).then((response) => {
       return response.data;
     });
@@ -699,8 +756,8 @@ export class SharePoint {
   getUserGroups() {
     return this.SP.get("_api/web/currentuser", {
       params: {
-        $expand: "groups"
-      }
+        $expand: "groups",
+      },
     }).then((response) => {
       return response.data.Groups;
     });
@@ -716,8 +773,8 @@ export class SharePoint {
       {},
       {
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -729,8 +786,8 @@ export class SharePoint {
       payload,
       {
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -743,8 +800,8 @@ export class SharePoint {
         headers: {
           Accept: "application/json; odata=nometadata",
           "X-RequestDigest": this.DIGEST,
-          "If-Match": "*"
-        }
+          "If-Match": "*",
+        },
       }
     ).then((response) => {
       return response.data;
@@ -754,7 +811,7 @@ export class SharePoint {
     return this.SP.get(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/Comments()`,
       {
-        params: params || {}
+        params: params || {},
       }
     ).then((response) => {
       return response.data;
@@ -764,7 +821,7 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/Comments(${commentID})/like`,
       {
-        params: params || {}
+        params: params || {},
       }
     ).then((response) => {
       return response.data;
@@ -774,7 +831,7 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/Comments(${commentID})/unlike`,
       {
-        params: params || {}
+        params: params || {},
       }
     ).then((response) => {
       return response.data;
@@ -798,21 +855,21 @@ export class SharePoint {
           MaximumEntitySuggestions: 50,
           PrincipalSource: 15,
           PrincipalType: 1,
-          QueryString: query
+          QueryString: query,
           //'Required':false,
           //'SharePointGroupID':null,
           //'UrlZone':null,
           //'UrlZoneSpecified':false,
           //'Web':null,
           //'WebApplicationID':null
-        }
+        },
       },
       {
         cancelToken: this.cancelTokens.searchUser.token,
         params: params || {},
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -832,19 +889,19 @@ export class SharePoint {
           MaximumEntitySuggestions: 50,
           PrincipalSource: 15,
           PrincipalType: 8,
-          QueryString: query
+          QueryString: query,
           //'Required':false,
           //'SharePointGroupID':null,
           //'UrlZone':null,
           //'UrlZoneSpecified':false,
           //'Web':null,
           //'WebApplicationID':null
-        }
+        },
       },
       {
         headers: {
-          "X-RequestDigest": DIGEST
-        }
+          "X-RequestDigest": DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -861,12 +918,12 @@ export class SharePoint {
     return this.SP.post(
       `/_api/Web/SiteGroups(${groupId})/users`,
       {
-        LoginName: `i:0#.f|membership|${email}`
+        LoginName: `i:0#.f|membership|${email}`,
       },
       {
         headers: {
-          "X-RequestDigest": this.DIGEST
-        }
+          "X-RequestDigest": this.DIGEST,
+        },
       }
     ).then((response) => {
       return response.data;
@@ -879,8 +936,8 @@ export class SharePoint {
       {
         headers: {
           "X-RequestDigest": this.DIGEST,
-          "X-HTTP-Method": "DELETE"
-        }
+          "X-HTTP-Method": "DELETE",
+        },
       }
     ).then((response) => {
       return response.data;
