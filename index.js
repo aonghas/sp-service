@@ -782,6 +782,27 @@ export class SharePoint {
       return response.data;
     });
   }
+  getSiteGroup(groupName) {
+    return this.SP.get(`/_api/web/sitegroups/getbyname('${groupName}')`).then(
+      (response) => {
+        return response.data;
+      }
+    );
+  }
+  createSiteGroup(groupName) {
+    return this.SP.post(`/_api/web/sitegroups`, { Title: groupName }).then(
+      (response) => {
+        return response.data;
+      }
+    );
+  }
+  deleteSiteGroup(groupID) {
+    return this.SP.post(`/_api/web/sitegroups/removebyid('${groupID}')`).then(
+      (response) => {
+        return response.data;
+      }
+    );
+  }
   ensureUser(email) {
     return this.SP.post(
       `/_api/web/ensureuser('${email}')`,
