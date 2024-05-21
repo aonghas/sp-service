@@ -6,41 +6,85 @@
     Updated: Class version Dec 2021
 *****/
 
-const Axios = require("axios");
+import Axios from "axios";
 
 export class SharePoint {
   constructor(options) {
-    this.baseUrl = (options && options.baseUrl) || process.env.VUE_APP_URL;
+    // process.env.VUE_APP_URL - webpack
+    // import.meta.env.VITE_APP_URL - vite
+    this.baseUrl = (options && options.baseUrl) || import.meta.env.VITE_APP_URL;
     this.DIGEST = "";
     this.cancelTokens = {
       getItems: null,
-      searchUser: null,
+      searchUser: null
     };
 
     this.SP = Axios.create({
-      baseURL: this.baseUrl,
+      baseURL: this.baseUrl
+    });
+
+    this.SP.interceptors.response.use(
+      (config) => {
+        return config;
+      },
+      (error) => {
+        // Check if the error is a 403 status
+        if (error.response && error.response.status === 403) {
+          // Additional action before retrying the original request
+          return this.generateDigest().then((digest) => {
+            error.config.headers = {
+              ...error.config.headers,
+              "X-RequestDigest": digest
+            };
+            return this.SP(error.config);
+          });
+        }
+
+        // For other errors, reject with the original error
+        return Promise.reject(error);
+      }
+    );
+
+    this.SP.interceptors.request.use((config) => {
+      // Check if the request contains the required header
+      if ("X-RequestDigest" in config.headers) {
+        // If DIGEST is null, generate it first
+        if (!this.DIGEST) {
+          return this.generateDigest().then((digest) => {
+            // Set the generated digest in the headers
+            config.headers = {
+              ...config.headers,
+              "X-RequestDigest": digest
+            };
+            return config;
+          });
+        } else {
+          return config;
+        }
+      }
+      return config;
     });
 
     console.log("connected to: " + this.baseUrl);
 
-    this.SP.post("/_api/contextinfo", null, {
-      headers: {
-        Accept: "application/json;odata=verbose",
-      },
-    })
-      .then((result) => {
-        console.log("Initialised DIGEST");
-        this.DIGEST = result.data.d.GetContextWebInformation.FormDigestValue;
-      })
-      .catch((error) => {
-        console.error("Could not generate digest value: ", error);
-      });
+    // this.SP.post("/_api/contextinfo", null, {
+    //   headers: {
+    //     Accept: "application/json;odata=verbose"
+    //   }
+    // })
+    //   .then((result) => {
+    //     console.log("Initialised DIGEST");
+    //     this.DIGEST = result.data.d.GetContextWebInformation.FormDigestValue;
+    //   })
+    //   .catch((error) => {
+    //     console.error("Could not generate digest value: ", error);
+    //   });
   }
   generateDigest() {
     return this.SP.post(`/_api/contextinfo`, null, {
       headers: {
-        Accept: "application/json;odata=verbose",
-      },
+        Accept: "application/json;odata=verbose"
+      }
     })
       .then((result) => {
         console.log("Refreshed DIGEST");
@@ -55,13 +99,13 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/folders`,
       {
-        ServerRelativeUrl: folderLocation + "/" + folderName,
+        ServerRelativeUrl: folderLocation + "/" + folderName
       },
       {
         params: {},
         headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
@@ -70,11 +114,11 @@ export class SharePoint {
   moveFile(payload) {
     return this.SP.post(`/_api/SP.MoveCopyUtil.MoveFileByPath()`, payload, {
       params: {
-        $expand: "ListItemAllFields",
+        $expand: "ListItemAllFields"
       },
       headers: {
-        "X-RequestDigest": this.DIGEST,
-      },
+        "X-RequestDigest": this.DIGEST
+      }
     }).then((response) => {
       return response.data;
     });
@@ -96,8 +140,8 @@ export class SharePoint {
       fileContents,
       {
         headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
@@ -109,11 +153,11 @@ export class SharePoint {
       fileContents,
       {
         params: {
-          $expand: "ListItemAllFields",
+          $expand: "ListItemAllFields"
         },
         headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
@@ -122,11 +166,11 @@ export class SharePoint {
   moveFile(payload) {
     return this.SP.post(`/_api/SP.MoveCopyUtil.MoveFileByPath()`, payload, {
       params: {
-        $expand: "ListItemAllFields",
+        $expand: "ListItemAllFields"
       },
       headers: {
-        "X-RequestDigest": this.DIGEST,
-      },
+        "X-RequestDigest": this.DIGEST
+      }
     }).then((response) => {
       return response.data;
     });
@@ -140,38 +184,30 @@ export class SharePoint {
         headers: {
           "X-HTTP-Method": "DELETE",
           "If-Match": "*",
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
     });
   }
   createItem(list, payload) {
-    return this.SP.post(
-      `/_api/web/lists/GetByTitle('${list}')/items`,
-      payload,
-      {
-        headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+    return this.SP.post(`/_api/web/lists/GetByTitle('${list}')/items`, payload, {
+      headers: {
+        "X-RequestDigest": this.DIGEST
       }
-    ).then((response) => {
+    }).then((response) => {
       return response.data;
     });
   }
   updateItem(list, id, payload) {
-    return this.SP.post(
-      `/_api/web/lists/GetByTitle('${list}')/items(${id})`,
-      payload,
-      {
-        headers: {
-          "X-RequestDigest": this.DIGEST,
-          "IF-MATCH": "*",
-          "X-HTTP-Method": "MERGE",
-        },
+    return this.SP.post(`/_api/web/lists/GetByTitle('${list}')/items(${id})`, payload, {
+      headers: {
+        "X-RequestDigest": this.DIGEST,
+        "IF-MATCH": "*",
+        "X-HTTP-Method": "MERGE"
       }
-    ).then((response) => {
+    }).then((response) => {
       return response.data;
     });
   }
@@ -179,7 +215,7 @@ export class SharePoint {
     return this.SP.get(
       `/_api/web/webinfos`,
       {
-        $select: "ServerRelativeUrl,Title",
+        $select: "ServerRelativeUrl,Title"
       },
       {}
     ).then((response) => {
@@ -195,8 +231,8 @@ export class SharePoint {
         headers: {
           "X-RequestDigest": this.DIGEST,
           "Content-Type": undefined,
-          "X-Requested-With": "XMLHttpRequest",
-        },
+          "X-Requested-With": "XMLHttpRequest"
+        }
       }
     ).then((response) => {
       return response.data;
@@ -212,8 +248,8 @@ export class SharePoint {
           "X-RequestDigest": this.DIGEST,
           "Content-Type": undefined,
           "X-HTTP-Method": "DELETE",
-          "X-Requested-With": "XMLHttpRequest",
-        },
+          "X-Requested-With": "XMLHttpRequest"
+        }
       }
     ).then((response) => {
       return response.data;
@@ -227,8 +263,8 @@ export class SharePoint {
         headers: {
           "X-RequestDigest": this.DIGEST,
           "X-HTTP-Method": "DELETE",
-          "IF-MATCH": "*",
-        },
+          "IF-MATCH": "*"
+        }
       }
     ).then((response) => {
       return response.data;
@@ -242,8 +278,8 @@ export class SharePoint {
         headers: {
           "X-RequestDigest": this.DIGEST,
           "X-HTTP-Method": "DELETE",
-          "IF-MATCH": "*",
-        },
+          "IF-MATCH": "*"
+        }
       }
     ).then((response) => {
       return response.data;
@@ -258,8 +294,8 @@ export class SharePoint {
         headers: {
           "X-HTTP-Method": "DELETE",
           "If-Match": "*",
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
@@ -274,8 +310,8 @@ export class SharePoint {
         headers: {
           "X-HTTP-Method": "DELETE",
           "If-Match": "*",
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
@@ -291,8 +327,8 @@ export class SharePoint {
         headers: {
           "X-RequestDigest": this.DIGEST,
 
-          "X-HTTP-Method": "DELETE",
-        },
+          "X-HTTP-Method": "DELETE"
+        }
       }
     ).then((response) => {
       return response.data;
@@ -302,8 +338,8 @@ export class SharePoint {
     return SP.get(`/_api/web/recyclebin()`, {
       params: params || {},
       headers: {
-        Accept: "application/json; odata=nometadata",
-      },
+        Accept: "application/json; odata=nometadata"
+      }
     }).then((response) => {
       return response.data;
     });
@@ -314,8 +350,8 @@ export class SharePoint {
       {},
       {
         headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
@@ -326,28 +362,25 @@ export class SharePoint {
       `/_api/web/lists/getByTitle('${listName}')/fields`,
       {
         FieldTypeKind: type || 2,
-        Title: name,
+        Title: name
       },
       {
         headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
     });
   }
   getFileContent(filePath, params) {
-    return this.SP.get(
-      `/_api/web/GetFileByServerRelativeUrl('${filePath}')/$value`,
-      {
-        params: params || {},
-        headers: {
-          // Accept: "application/octet-stream",
-          "X-RequestDigest": this.DIGEST,
-        },
+    return this.SP.get(`/_api/web/GetFileByServerRelativeUrl('${filePath}')/$value`, {
+      params: params || {},
+      headers: {
+        // Accept: "application/octet-stream",
+        "X-RequestDigest": this.DIGEST
       }
-    ).then((response) => {
+    }).then((response) => {
       return response.data;
     });
   }
@@ -356,23 +389,20 @@ export class SharePoint {
       params: params || {},
       headers: {
         // Accept: "application/octet-stream",
-        "X-RequestDigest": this.DIGEST,
-      },
+        "X-RequestDigest": this.DIGEST
+      }
     }).then((response) => {
       return response.data;
     });
   }
   getFileProperties(filePath, params) {
-    return this.SP.get(
-      `/_api/web/GetFileByServerRelativeUrl('${filePath}')/Properties`,
-      {
-        params: params || {},
-        headers: {
-          // Accept: "application/octet-stream",
-          "X-RequestDigest": this.DIGEST,
-        },
+    return this.SP.get(`/_api/web/GetFileByServerRelativeUrl('${filePath}')/Properties`, {
+      params: params || {},
+      headers: {
+        // Accept: "application/octet-stream",
+        "X-RequestDigest": this.DIGEST
       }
-    ).then((response) => {
+    }).then((response) => {
       return response.data;
     });
   }
@@ -381,41 +411,36 @@ export class SharePoint {
       params: params || {},
       headers: {
         // Accept: "application/octet-stream",
-        "X-RequestDigest": this.DIGEST,
-      },
+        "X-RequestDigest": this.DIGEST
+      }
     }).then((response) => {
       return response.data;
     });
   }
   getFiles(folder, params) {
     return this.SP.get(`/_api/web/GetFolderByServerRelativeUrl('${folder}')`, {
-      params: params || {},
+      params: params || {}
     }).then((response) => {
       return response.data;
     });
   }
   getFilesByFolder(folder, params) {
-    return this.SP.get(
-      `/_api/web/GetFolderByServerRelativeUrl('${folder}')/Files`,
-      {
-        params: params || {},
-      }
-    ).then((response) => {
+    return this.SP.get(`/_api/web/GetFolderByServerRelativeUrl('${folder}')/Files`, {
+      params: params || {}
+    }).then((response) => {
       return response.data;
     });
   }
   getItemCount(list) {
-    return this.SP.get(`/_api/web/lists/GetByTitle('${list}')/itemcount`).then(
-      (response) => {
-        return response.data;
-      }
-    );
+    return this.SP.get(`/_api/web/lists/GetByTitle('${list}')/itemcount`).then((response) => {
+      return response.data;
+    });
   }
   getFields(list, params) {
     return this.SP.get(`/_api/web/lists/getbytitle('${list}')/fields`, {
       params: Object.assign({}, params, {
-        $filter: "Hidden eq false and ReadOnlyField eq false",
-      }),
+        $filter: "Hidden eq false and ReadOnlyField eq false"
+      })
     }).then((response) => {
       return response.data;
     });
@@ -429,8 +454,8 @@ export class SharePoint {
       // cancelToken: this.cancelTokens.getItems.token,
       params: params || {},
       headers: {
-        Accept: "application/json; odata=nometadata",
-      },
+        Accept: "application/json; odata=nometadata"
+      }
     }).then((response) => {
       return response.data;
     });
@@ -440,15 +465,13 @@ export class SharePoint {
       this.SP.get(`/_api/web/lists/GetByTitle('${list}')/items`, {
         params: params || {},
         headers: {
-          Accept: "application/json; odata=nometadata",
-        },
+          Accept: "application/json; odata=nometadata"
+        }
       }).then(async (response) => {
         let resp = response.data;
         let results = resp.value;
         while (resp["odata.nextLink"]) {
-          resp = await Axios.get(resp["odata.nextLink"]).then(
-            (resp) => resp.data
-          );
+          resp = await Axios.get(resp["odata.nextLink"]).then((resp) => resp.data);
           results = [...results, ...resp.value];
         }
         resolve({ value: results });
@@ -459,8 +482,8 @@ export class SharePoint {
     return this.SP.get(`/_api/web/lists(guid'${list}')/items`, {
       params: params || {},
       headers: {
-        Accept: "application/json; odata=nometadata",
-      },
+        Accept: "application/json; odata=nometadata"
+      }
     }).then((response) => {
       return response.data;
     });
@@ -470,15 +493,13 @@ export class SharePoint {
       this.SP.get(`/_api/web/lists(guid'${list}')/items`, {
         params: params || {},
         headers: {
-          Accept: "application/json; odata=nometadata",
-        },
+          Accept: "application/json; odata=nometadata"
+        }
       }).then(async (response) => {
         let resp = response.data;
         let results = resp.value;
         while (resp["odata.nextLink"]) {
-          resp = await Axios.get(resp["odata.nextLink"]).then(
-            (resp) => resp.data
-          );
+          resp = await Axios.get(resp["odata.nextLink"]).then((resp) => resp.data);
           results = [...results, ...resp.value];
         }
         resolve({ value: results });
@@ -489,8 +510,8 @@ export class SharePoint {
     return this.SP.get(`/_api/search/query`, {
       params: params || {},
       headers: {
-        Accept: "application/json; odata=verbose",
-      },
+        Accept: "application/json; odata=verbose"
+      }
     }).then((response) => {
       return response;
     });
@@ -501,16 +522,16 @@ export class SharePoint {
       (data && {
         query: {
           __metadata: { type: "SP.CamlQuery" },
-          ViewXml: data,
-        },
+          ViewXml: data
+        }
       }) ||
         {},
       {
         params: params || {},
         headers: {
           "content-type": "application/json;odata=verbose",
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data.value;
@@ -519,128 +540,104 @@ export class SharePoint {
   getChangeHistory(list, id) {
     return new Promise((resolve) => {
       this.getList(list).then((data) => {
-        this.SP.get(`/_layouts/15/Versions.aspx?list=${data.Id}&ID=${id}`).then(
-          (resp) => {
-            const parser = new DOMParser();
-            const s = new XMLSerializer();
-            const xmlString = resp.data;
-            const doc = parser.parseFromString(xmlString, "text/html");
-            const table = doc.querySelector(".ms-settingsframe");
+        this.SP.get(`/_layouts/15/Versions.aspx?list=${data.Id}&ID=${id}`).then((resp) => {
+          const parser = new DOMParser();
+          const s = new XMLSerializer();
+          const xmlString = resp.data;
+          const doc = parser.parseFromString(xmlString, "text/html");
+          const table = doc.querySelector(".ms-settingsframe");
 
-            const items = table.querySelector("tbody").children;
+          const items = table.querySelector("tbody").children;
 
-            const versionArray = [];
+          const versionArray = [];
 
-            for (let item of items) {
-              const version = {};
-              if (item.children.length == 3 && item.querySelector("td")) {
-                const author = item.children[2];
+          for (let item of items) {
+            const version = {};
+            if (item.children.length == 3 && item.querySelector("td")) {
+              const author = item.children[2];
 
-                versionArray.push({
-                  changes: [],
-                  author: {
-                    id: parseInt(
-                      author
-                        .querySelector(".ms-subtleLink")
-                        .getAttribute("href")
-                        .split("ID=")[1]
-                    ),
-                    name: author.textContent.replace(/[\n\t]+/g, ""),
-                    email: author
-                      .querySelector(".ms-imnSpan > a > span > img")
-                      .getAttribute("sip"),
-                  },
-                  date: new Date(
-                    item
-                      .querySelector(".ms-vb-title")
-                      .textContent.replace(/[\n\t]+/g, "")
-                  ).toISOString(),
-                  versionId: parseInt(
-                    item
-                      .querySelector(".ms-vb-title > table")
-                      .getAttribute("verid")
+              versionArray.push({
+                changes: [],
+                author: {
+                  id: parseInt(
+                    author.querySelector(".ms-subtleLink").getAttribute("href").split("ID=")[1]
                   ),
-                  version: parseFloat(item.querySelector(".ms-vb2").innerText),
+                  name: author.textContent.replace(/[\n\t]+/g, ""),
+                  email: author.querySelector(".ms-imnSpan > a > span > img").getAttribute("sip")
+                },
+                date: new Date(
+                  item.querySelector(".ms-vb-title").textContent.replace(/[\n\t]+/g, "")
+                ).toISOString(),
+                versionId: parseInt(
+                  item.querySelector(".ms-vb-title > table").getAttribute("verid")
+                ),
+                version: parseFloat(item.querySelector(".ms-vb2").innerText)
+              });
+            } else if (
+              item.children.length == 2 &&
+              item.querySelector("td") &&
+              item.querySelector("tbody")
+            ) {
+              const rows = item.querySelector("tbody").children;
+              const versionId = rows[0].id.match(/(\d+)/g)[0];
+              const indexToAdd = versionArray.findIndex((v) => v.versionId == versionId);
+
+              const changes = [];
+
+              for (let change of rows) {
+                const previousValue =
+                  (change.getAttribute("title") &&
+                    change.getAttribute("title").split("Previous Value: ")) ||
+                  [];
+                changes.push({
+                  id: change.id,
+                  field:
+                    change.querySelector(".ms-propertysheet") &&
+                    change
+                      .querySelector(".ms-propertysheet")
+                      .innerText.replace(/[\n\t]+/g, "")
+                      .trim(),
+                  previousValue: previousValue[previousValue.length - 1],
+                  value:
+                    change.querySelector(".ms-vb") &&
+                    change.querySelector(".ms-vb").innerText.replace(/[\n\t]+/g, "")
                 });
-              } else if (
-                item.children.length == 2 &&
-                item.querySelector("td") &&
-                item.querySelector("tbody")
-              ) {
-                const rows = item.querySelector("tbody").children;
-                const versionId = rows[0].id.match(/(\d+)/g)[0];
-                const indexToAdd = versionArray.findIndex(
-                  (v) => v.versionId == versionId
-                );
-
-                const changes = [];
-
-                for (let change of rows) {
-                  const previousValue =
-                    (change.getAttribute("title") &&
-                      change.getAttribute("title").split("Previous Value: ")) ||
-                    [];
-                  changes.push({
-                    id: change.id,
-                    field:
-                      change.querySelector(".ms-propertysheet") &&
-                      change
-                        .querySelector(".ms-propertysheet")
-                        .innerText.replace(/[\n\t]+/g, "")
-                        .trim(),
-                    previousValue: previousValue[previousValue.length - 1],
-                    value:
-                      change.querySelector(".ms-vb") &&
-                      change
-                        .querySelector(".ms-vb")
-                        .innerText.replace(/[\n\t]+/g, ""),
-                  });
-                }
-
-                versionArray[indexToAdd].changes = changes;
               }
-            }
 
-            resolve(versionArray);
+              versionArray[indexToAdd].changes = changes;
+            }
           }
-        );
+
+          resolve(versionArray);
+        });
       });
     });
   }
   getItemVersions(list, id, params) {
-    return this.SP.get(
-      `/_api/web/lists/GetByTitle('${list}')/items(${id})/versions`,
-      {
-        params: params || {},
-      }
-    ).then((response) => {
+    return this.SP.get(`/_api/web/lists/GetByTitle('${list}')/items(${id})/versions`, {
+      params: params || {}
+    }).then((response) => {
       return response.data;
     });
   }
   getItem(list, id, params) {
     return this.SP.get(`/_api/web/lists/GetByTitle('${list}')/items(${id})`, {
-      params: params || {},
+      params: params || {}
     }).then((response) => {
       return response.data;
     });
   }
   likeItem(list, id, params) {
-    return this.SP.post(
-      `/_api/web/lists/GetByTitle('${list}')/items(${id})/like`,
-      {
-        params: params || {},
-      }
-    ).then((response) => {
+    return this.SP.post(`/_api/web/lists/GetByTitle('${list}')/items(${id})/like`, {
+      params: params || {}
+    }).then((response) => {
       return response.data;
     });
   }
   unlikeItem(list, id, params) {
-    return this.SP.post(
-      `/_api/web/lists/GetByTitle('${list}')/items(${id})/unlike`,
-      {
-        params: params || {},
-      }
-    ).then((response) => {
+    return this.SP.post(`/_api/web/lists/GetByTitle('${list}')/items(${id})/unlike`, {
+      params: params || {}
+    }).then((response) => {
       return response.data;
     });
   }
@@ -655,15 +652,32 @@ export class SharePoint {
     });
   }
   getList(listTitle) {
-    return this.SP.get(`/_api/web/lists/GetByTitle('${listTitle}')`).then(
+    return this.SP.get(`/_api/web/lists/GetByTitle('${listTitle}')`).then((response) => {
+      return response.data;
+    });
+  }
+  getListViews(listTitle) {
+    return this.SP.get(`/_api/web/lists/GetByTitle('${listTitle}')/views`).then((response) => {
+      return response.data;
+    });
+  }
+  getListView(listTitle, viewId) {
+    return this.SP.get(`/_api/web/lists/GetByTitle('${listTitle}')/views('${viewId})`).then(
       (response) => {
         return response.data;
       }
     );
   }
+  getListViewFields(listTitle, viewId) {
+    return this.SP.get(
+      `/_api/web/lists/GetByTitle('${listTitle}')/views('${viewId})/viewfields`
+    ).then((response) => {
+      return response.data;
+    });
+  }
   getListFields(listTitle, params) {
     return this.SP.get(`/_api/web/lists/GetByTitle('${listTitle}')/fields`, {
-      params: params || {},
+      params: params || {}
     }).then((response) => {
       return response.data;
     });
@@ -676,12 +690,12 @@ export class SharePoint {
         Description: data.description,
         ContentTypesEnabled: true,
         AllowContentTypes: true,
-        BaseTemplate: 100,
+        BaseTemplate: 100
       },
       {
         headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
@@ -695,14 +709,14 @@ export class SharePoint {
         Description: data.description,
         ContentTypesEnabled: true,
         AllowContentTypes: true,
-        BaseTemplate: 100,
+        BaseTemplate: 100
       },
       {
         headers: {
           "IF-MATCH": "*",
           "X-HTTP-Method": "MERGE",
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
@@ -716,34 +730,28 @@ export class SharePoint {
         headers: {
           "IF-MATCH": "*",
           "X-HTTP-Method": "DELETE",
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
     });
   }
   getUser(account) {
-    return this.SP.get(
-      "/_api/sp.userprofiles.peoplemanager/getpropertiesfor(@v)",
-      {
-        params: {
-          "@v": `'${account}'`,
-        },
+    return this.SP.get("/_api/sp.userprofiles.peoplemanager/getpropertiesfor(@v)", {
+      params: {
+        "@v": `'${account}'`
       }
-    ).then((response) => {
+    }).then((response) => {
       return response.data;
     });
   }
   getUserByEmail(email) {
-    return this.SP.get(
-      "/_api/sp.userprofiles.peoplemanager/getpropertiesfor(accountName=@v)",
-      {
-        params: {
-          "@v": `'i:0#.f|membership|${email}'`,
-        },
+    return this.SP.get("/_api/sp.userprofiles.peoplemanager/getpropertiesfor(accountName=@v)", {
+      params: {
+        "@v": `'i:0#.f|membership|${email}'`
       }
-    ).then((response) => {
+    }).then((response) => {
       return response.data;
     });
   }
@@ -762,8 +770,8 @@ export class SharePoint {
   getCurrentUser() {
     return this.SP.get("_api/web/currentuser", {
       params: {
-        $expand: "groups",
-      },
+        $expand: "groups"
+      }
     }).then((response) => {
       return response.data;
     });
@@ -771,8 +779,8 @@ export class SharePoint {
   getUserGroups() {
     return this.SP.get("_api/web/currentuser", {
       params: {
-        $expand: "groups",
-      },
+        $expand: "groups"
+      }
     }).then((response) => {
       return response.data.Groups;
     });
@@ -783,25 +791,19 @@ export class SharePoint {
     });
   }
   getSiteGroup(groupName) {
-    return this.SP.get(`/_api/web/sitegroups/getbyname('${groupName}')`).then(
-      (response) => {
-        return response.data;
-      }
-    );
+    return this.SP.get(`/_api/web/sitegroups/getbyname('${groupName}')`).then((response) => {
+      return response.data;
+    });
   }
   createSiteGroup(groupName) {
-    return this.SP.post(`/_api/web/sitegroups`, { Title: groupName }).then(
-      (response) => {
-        return response.data;
-      }
-    );
+    return this.SP.post(`/_api/web/sitegroups`, { Title: groupName }).then((response) => {
+      return response.data;
+    });
   }
   deleteSiteGroup(groupID) {
-    return this.SP.post(`/_api/web/sitegroups/removebyid('${groupID}')`).then(
-      (response) => {
-        return response.data;
-      }
-    );
+    return this.SP.post(`/_api/web/sitegroups/removebyid('${groupID}')`).then((response) => {
+      return response.data;
+    });
   }
   ensureUser(email) {
     return this.SP.post(
@@ -809,23 +811,19 @@ export class SharePoint {
       {},
       {
         headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
     });
   }
   addComment(list, id, payload) {
-    return this.SP.post(
-      `/_api/web/lists/GetByTitle('${list}')/items(${id})/Comments()`,
-      payload,
-      {
-        headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+    return this.SP.post(`/_api/web/lists/GetByTitle('${list}')/items(${id})/Comments()`, payload, {
+      headers: {
+        "X-RequestDigest": this.DIGEST
       }
-    ).then((response) => {
+    }).then((response) => {
       return response.data;
     });
   }
@@ -836,20 +834,17 @@ export class SharePoint {
         headers: {
           Accept: "application/json; odata=nometadata",
           "X-RequestDigest": this.DIGEST,
-          "If-Match": "*",
-        },
+          "If-Match": "*"
+        }
       }
     ).then((response) => {
       return response.data;
     });
   }
   getComments(list, id, params) {
-    return this.SP.get(
-      `/_api/web/lists/GetByTitle('${list}')/items(${id})/Comments()`,
-      {
-        params: params || {},
-      }
-    ).then((response) => {
+    return this.SP.get(`/_api/web/lists/GetByTitle('${list}')/items(${id})/Comments()`, {
+      params: params || {}
+    }).then((response) => {
       return response.data;
     });
   }
@@ -857,7 +852,7 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/Comments(${commentID})/like`,
       {
-        params: params || {},
+        params: params || {}
       }
     ).then((response) => {
       return response.data;
@@ -867,7 +862,7 @@ export class SharePoint {
     return this.SP.post(
       `/_api/web/lists/GetByTitle('${list}')/items(${id})/Comments(${commentID})/unlike`,
       {
-        params: params || {},
+        params: params || {}
       }
     ).then((response) => {
       return response.data;
@@ -891,21 +886,21 @@ export class SharePoint {
           MaximumEntitySuggestions: 50,
           PrincipalSource: 15,
           PrincipalType: 1,
-          QueryString: query,
+          QueryString: query
           //'Required':false,
           //'SharePointGroupID':null,
           //'UrlZone':null,
           //'UrlZoneSpecified':false,
           //'Web':null,
           //'WebApplicationID':null
-        },
+        }
       },
       {
         cancelToken: this.cancelTokens.searchUser.token,
         params: params || {},
         headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
@@ -925,28 +920,26 @@ export class SharePoint {
           MaximumEntitySuggestions: 50,
           PrincipalSource: 15,
           PrincipalType: 8,
-          QueryString: query,
+          QueryString: query
           //'Required':false,
           //'SharePointGroupID':null,
           //'UrlZone':null,
           //'UrlZoneSpecified':false,
           //'Web':null,
           //'WebApplicationID':null
-        },
+        }
       },
       {
         headers: {
-          "X-RequestDigest": DIGEST,
-        },
+          "X-RequestDigest": DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
     });
   }
   getUsersFromGroup(groupName) {
-    return this.SP.get(
-      `/_api/Web/SiteGroups/GetByName('${groupName}')/users`
-    ).then((response) => {
+    return this.SP.get(`/_api/Web/SiteGroups/GetByName('${groupName}')/users`).then((response) => {
       return response.data;
     });
   }
@@ -954,12 +947,12 @@ export class SharePoint {
     return this.SP.post(
       `/_api/Web/SiteGroups(${groupId})/users`,
       {
-        LoginName: `i:0#.f|membership|${email}`,
+        LoginName: `i:0#.f|membership|${email}`
       },
       {
         headers: {
-          "X-RequestDigest": this.DIGEST,
-        },
+          "X-RequestDigest": this.DIGEST
+        }
       }
     ).then((response) => {
       return response.data;
@@ -972,8 +965,8 @@ export class SharePoint {
       {
         headers: {
           "X-RequestDigest": this.DIGEST,
-          "X-HTTP-Method": "DELETE",
-        },
+          "X-HTTP-Method": "DELETE"
+        }
       }
     ).then((response) => {
       return response.data;
