@@ -662,7 +662,7 @@ export class SharePoint {
     });
   }
   getListView(listTitle, viewId) {
-    return this.SP.get(`/_api/web/lists/GetByTitle('${listTitle}')/views('${viewId})`).then(
+    return this.SP.get(`/_api/web/lists/GetByTitle('${listTitle}')/views('${viewId}')`).then(
       (response) => {
         return response.data;
       }
@@ -670,7 +670,7 @@ export class SharePoint {
   }
   getListViewFields(listTitle, viewId) {
     return this.SP.get(
-      `/_api/web/lists/GetByTitle('${listTitle}')/views('${viewId})/viewfields`
+      `/_api/web/lists/GetByTitle('${listTitle}')/views('${viewId}')/viewfields`
     ).then((response) => {
       return response.data;
     });
