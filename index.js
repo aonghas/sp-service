@@ -335,7 +335,7 @@ export class SharePoint {
     });
   }
   listRecycleBin(params) {
-    return SP.get(`/_api/web/recyclebin()`, {
+    return this.SP.get(`/_api/web/recyclebin()`, {
       params: params || {},
       headers: {
         Accept: "application/json; odata=nometadata"
@@ -345,7 +345,7 @@ export class SharePoint {
     });
   }
   restoreRecycledItem(id) {
-    return SP.post(
+    return this.SP.post(
       `/_api/web/recyclebin('${id}')/restore()`,
       {},
       {
@@ -525,7 +525,7 @@ export class SharePoint {
           ViewXml: data
         }
       }) ||
-        {},
+      {},
       {
         params: params || {},
         headers: {
