@@ -163,18 +163,6 @@ export class SharePoint {
       return response.data;
     });
   }
-  moveFile(payload) {
-    return this.SP.post(`/_api/SP.MoveCopyUtil.MoveFileByPath()`, payload, {
-      params: {
-        $expand: "ListItemAllFields"
-      },
-      headers: {
-        "X-RequestDigest": this.DIGEST
-      }
-    }).then((response) => {
-      return response.data;
-    });
-  }
   deleteFile(folder, fileName) {
     return this.SP.post(
       `/_api/web/GetFolderByServerRelativeUrl('${folder}/${fileName}')`,
@@ -433,6 +421,13 @@ export class SharePoint {
   }
   getItemCount(list) {
     return this.SP.get(`/_api/web/lists/GetByTitle('${list}')/itemcount`).then((response) => {
+      return response.data;
+    });
+  }
+  getListCountWithFilter(listTitle, params) {
+    return this.SP.get(`/_vti_bin/listdata.svc/${listTitle}/$count`, {
+      params: params || {}
+    }).then((response) => {
       return response.data;
     });
   }
@@ -931,7 +926,7 @@ export class SharePoint {
       },
       {
         headers: {
-          "X-RequestDigest": DIGEST
+          "X-RequestDigest": this.DIGEST
         }
       }
     ).then((response) => {
